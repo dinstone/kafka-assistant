@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration>
+	<property>
+		<name>bootstrap.servers</name>
+		<value>182.92.148.61:9092</value>
+	</property>
+	<property>
+		<name>kafka.topic</name>
+		<value>test</value>
+	</property>
+	<property>
+		<name>group.id</name>
+		<value>product</value>
+	</property>
+	<property>
+		<name>key.deserializer</name>
+		<value>org.apache.kafka.common.serialization.StringDeserializer</value>
+	</property>
+	<property>
+		<name>value.deserializer</name>
+		<value>org.apache.kafka.common.serialization.StringDeserializer</value>
+	</property>
+	<property>
+		<name>enable.auto.commit</name>
+		<value>false</value>
+	</property>
+	<property>
+		<name>session.timeout.ms</name>
+		<value>30000</value>
+	</property>
+	<property>
+		<name>auto.offset.reset</name>
+		<value>latest</value>
+	</property>
+</configuration>
