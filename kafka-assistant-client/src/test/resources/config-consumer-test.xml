@@ -2,11 +2,11 @@
 <configuration>
 	<property>
 		<name>bootstrap.servers</name>
-		<value>182.92.148.61:9092</value>
+		<value>localhost:9092</value>
 	</property>
 	<property>
 		<name>kafka.topic</name>
-		<value>test</value>
+		<value>kafeidou</value>
 	</property>
 	<property>
 		<name>group.id</name>
@@ -27,6 +27,14 @@
 	<property>
 		<name>session.timeout.ms</name>
 		<value>30000</value>
+	</property>
+	<property>
+		<name>max.poll.interval.ms</name>
+		<value>300000</value>
+	</property>
+	<property>
+		<name>max.poll.records</name>
+		<value>300</value>
 	</property>
 	<property>
 		<name>auto.offset.reset</name>

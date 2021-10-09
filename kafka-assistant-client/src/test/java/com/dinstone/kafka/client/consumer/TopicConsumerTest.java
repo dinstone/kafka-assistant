@@ -2,51 +2,36 @@
 package com.dinstone.kafka.client.consumer;
 
 import java.io.IOException;
+import java.util.Random;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.dinstone.kafka.client.consumer.ConsumerConfig;
-import com.dinstone.kafka.client.consumer.MessageHandler;
-import com.dinstone.kafka.client.consumer.TopicConsumer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TopicConsumerTest {
 
-    @Before
-    public void setUp() throws Exception {
-    }
+	private static final Logger LOG = LoggerFactory.getLogger(TopicConsumerTest.class);
 
-    @After
-    public void tearDown() throws Exception {
-    }
+	public static void main(String[] args) {
+		MessageHandler<String, String> handleService = new MessageHandler<String, String>() {
 
-    @Test
-    public void test() {
-        MessageHandler<String, String> handleService = new MessageHandler<String, String>() {
+			@Override
+			public void handle(ConsumerRecord<String, String> consumerRecord) throws Exception {
+				Thread.sleep(new Random().nextInt(1000));
+			}
 
-            @Override
-            public void handle(String key, String message) throws Exception {
-                System.out.println("value = " + message);
-                // Thread.sleep(800);
-            }
-        };
+		};
 
-        ConsumerConfig consumeConfig = new ConsumerConfig("config-consumer-test.xml");
-        TopicConsumer<String, String> process = new TopicConsumer<String, String>(consumeConfig, handleService);
-        process.start();
+		ConsumerConfig consumeConfig = new ConsumerConfig("config-consumer-test.xml");
+		TopicConsumer<String, String> process = new TopicConsumer<String, String>(consumeConfig, handleService);
+		process.start();
 
-        try {
-            System.in.read();
-        } catch (IOException e) {
-        }
+		try {
+			System.in.read();
+		} catch (IOException e) {
+		}
 
-        process.stop();
-
-        try {
-            System.in.read();
-        } catch (IOException e) {
-        }
-    }
+		process.stop();
+	}
 
 }

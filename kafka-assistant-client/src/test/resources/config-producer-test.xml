@@ -2,11 +2,11 @@
 <configuration>
 	<property>
 		<name>bootstrap.servers</name>
-		<value>182.92.148.61:9092</value>
+		<value>localhost:9092</value>
 	</property>
 	<property>
 		<name>kafka.topic</name>
-		<value>test</value>
+		<value>kafeidou</value>
 	</property>
 	<property>
 		<name>key.serializer</name>

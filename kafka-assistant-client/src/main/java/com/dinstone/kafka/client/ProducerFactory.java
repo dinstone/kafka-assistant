@@ -7,6 +7,7 @@ import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -15,6 +16,8 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.ProducerFencedException;
 import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,6 +101,37 @@ public class ProducerFactory<K, V> {
 
         public void close(long timeout, TimeUnit unit) {
             this.delegate.close(timeout, unit);
+        }
+
+        @Override
+        public void initTransactions() {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void beginTransaction() throws ProducerFencedException {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void sendOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> offsets, String consumerGroupId)
+                throws ProducerFencedException {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void commitTransaction() throws ProducerFencedException {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void abortTransaction() throws ProducerFencedException {
+            // TODO Auto-generated method stub
+            
         }
 
     }

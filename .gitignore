@@ -1,1 +1,4 @@
 /.settings/
+/kafka-assistant.iml
+/.idea/
+/logs/

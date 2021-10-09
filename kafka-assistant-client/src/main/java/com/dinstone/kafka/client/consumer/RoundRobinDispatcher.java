@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-public class RoundRobinDispatcher implements RecordDispatcher {
+public class RoundRobinDispatcher implements RecordTaskDispatcher {
 
     private final AtomicInteger counter = new AtomicInteger(new Random().nextInt());
 

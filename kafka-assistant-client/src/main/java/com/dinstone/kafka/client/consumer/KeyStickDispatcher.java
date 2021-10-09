@@ -3,7 +3,7 @@ package com.dinstone.kafka.client.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-public class KeyStickDispatcher implements RecordDispatcher {
+public class KeyStickDispatcher implements RecordTaskDispatcher {
 
     @Override
     public int dispatch(ConsumerRecord<?, ?> record, int runnerSize) {
