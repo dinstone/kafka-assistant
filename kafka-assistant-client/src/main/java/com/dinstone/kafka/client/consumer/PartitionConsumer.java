@@ -56,19 +56,18 @@ public class PartitionConsumer<K, V> {
 	 */
 	public long submit(List<ConsumerRecord<K, V>> recordList) {
 		int count = 0;
-		ConsumerRecord<K, V> last = null;
+		RecordFuture<K, V> last = null;
 		for (ConsumerRecord<K, V> record : recordList) {
 			if (futureQueue.size() < messageQueueSize) {
-				RecordFuture<K, V> pr = new RecordFuture<K, V>(record);
-				futureQueue.add(pr);
-				submitQueue.add(pr);
-				last = record;
+				last = new RecordFuture<K, V>(record);
+				futureQueue.add(last);
+				submitQueue.add(last);
 				//
 				count++;
 			}
 		}
 		if (last != null) {
-			submitOffset = last.offset();
+			submitOffset = last.record().offset();
 		}
 		LOG.debug("{} submit count {}, last offset {}", partition, count, submitOffset);
 		return submitOffset;
@@ -81,20 +80,19 @@ public class PartitionConsumer<K, V> {
 	 */
 	public long finish() {
 		int count = 0;
-		ConsumerRecord<?, ?> last = null;
+		RecordFuture<K, V> last = null;
 		for (;;) {
-			RecordFuture<K, V> pr = futureQueue.peek();
-			if (pr == null || !pr.isComplete()) {
+			last = futureQueue.peek();
+			if (last == null || !last.isComplete()) {
 				break;
 			}
 
 			futureQueue.poll();
-			last = pr.getRecord();
 			//
 			count++;
 		}
 
-		long offset = last == null ? 0 : last.offset();
+		long offset = last == null ? 0 : last.record().offset();
 		LOG.debug("{} finish count {}, last offset {}", partition, count, offset);
 		return offset;
 	}
@@ -122,13 +120,13 @@ public class PartitionConsumer<K, V> {
 				try {
 					record = submitQueue.take();
 
-					messageHandler.handle(record.getRecord());
+					messageHandler.handle(record.schedule());
 
-					record.complete(1);
+					record.complete();
 					record = null;
 				} catch (Throwable e) {
 					if (record != null) {
-						record.complete(-1);
+						record.complete(e);
 					}
 
 					// InterruptedException break, other ignore
@@ -138,7 +136,7 @@ public class PartitionConsumer<K, V> {
 				}
 			}
 
-			LOG.warn("submit/finish : {}/{} records untreated", submitQueue.size(), futureQueue.size());
+			LOG.warn("submit/future : {}/{} records untreated", submitQueue.size(), futureQueue.size());
 		}
 
 	}

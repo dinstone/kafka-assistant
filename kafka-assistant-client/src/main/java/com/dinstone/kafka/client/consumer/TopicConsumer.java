@@ -43,12 +43,12 @@ public class TopicConsumer<K, V> {
 	}
 
 	public TopicConsumer(ConsumerConfig consumerConfig, MessageHandler<K, V> messageHandler,
-			RecordTaskDispatcher dispatcher) {
+			RecordDispatcher dispatcher) {
 		this(consumerConfig, messageHandler, dispatcher, null, null);
 	}
 
 	public TopicConsumer(ConsumerConfig consumerConfig, MessageHandler<K, V> messageHandler,
-			RecordTaskDispatcher dispatcher, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+			RecordDispatcher dispatcher, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
 		String topic = consumerConfig.getTopic();
 		if (topic == null || topic.length() == 0) {
 			throw new IllegalArgumentException("kafka.topic is empty");
