@@ -13,81 +13,74 @@ import com.dinstone.kafka.client.ProducerFactory;
 
 public class TopicProducer<K, V> {
 
-    private String topic;
+	private String topic;
 
-    private Producer<K, V> kafkaProducer;
+	private Producer<K, V> kafkaProducer;
 
-    private ProducerFactory<K, V> producerFactory;
+	private ProducerFactory<K, V> producerFactory;
 
-    public TopicProducer(ProducerConfig config) {
-        this(config, null, null, null);
-    }
+	public TopicProducer(ProducerConfig config) {
+		this(config, null, null, null, null);
+	}
 
-    public TopicProducer(ProducerConfig config, Serializer<K> keySerializer, Serializer<V> valueSerializer,
-            Callback defaultCallback) {
-        if (config == null) {
-            throw new IllegalArgumentException("config is null");
-        }
-        if (config.getTopic() == null || config.getTopic().length() == 0) {
-            throw new IllegalArgumentException("kafka.topic is empty");
-        }
-        this.topic = config.getTopic();
+	public TopicProducer(ProducerConfig config, String topic) {
+		this(config, topic, null, null, null);
+	}
 
-        this.producerFactory = new ProducerFactory<K, V>(config.getKafkaConfig(), keySerializer, valueSerializer,
-            defaultCallback);
-    }
+	public TopicProducer(ProducerConfig config, String topic, Serializer<K> keySerializer,
+			Serializer<V> valueSerializer, Callback defaultCallback) {
+		if (config == null) {
+			throw new IllegalArgumentException("config is null");
+		}
 
-    public TopicProducer(ProducerConfig config, ProducerFactory<K, V> producerFactory) {
-        if (config == null) {
-            throw new IllegalArgumentException("config is null");
-        }
+		if (topic != null && !topic.isEmpty()) {
+			this.topic = topic;
+		} else {
+			if (config.getTopic() == null || config.getTopic().length() == 0) {
+				throw new IllegalArgumentException("kafka.topic is empty");
+			}
+			this.topic = config.getTopic();
+		}
 
-        if (config.getTopic() == null || config.getTopic().length() == 0) {
-            throw new IllegalArgumentException("kafka.topic is empty");
-        }
-        this.topic = config.getTopic();
+		this.producerFactory = new ProducerFactory<K, V>(config.getKafkaConfig(), keySerializer, valueSerializer,
+				defaultCallback);
+	}
 
-        if (producerFactory == null) {
-            throw new IllegalArgumentException("producerFactory is null");
-        }
-        this.producerFactory = producerFactory;
-    }
+	public Future<RecordMetadata> send(K key, V data) {
+		synchronized (this) {
+			if (this.kafkaProducer == null) {
+				this.kafkaProducer = this.producerFactory.createProducer();
+			}
+		}
 
-    public Future<RecordMetadata> send(K key, V data) {
-        synchronized (this) {
-            if (this.kafkaProducer == null) {
-                this.kafkaProducer = this.producerFactory.createProducer();
-            }
-        }
+		ProducerRecord<K, V> record = new ProducerRecord<K, V>(topic, key, data);
+		return this.kafkaProducer.send(record);
+	}
 
-        ProducerRecord<K, V> record = new ProducerRecord<K, V>(topic, key, data);
-        return this.kafkaProducer.send(record);
-    }
+	public Future<RecordMetadata> send(K key, V data, Callback callback) {
+		synchronized (this) {
+			if (this.kafkaProducer == null) {
+				this.kafkaProducer = this.producerFactory.createProducer();
+			}
+		}
 
-    public Future<RecordMetadata> send(K key, V data, Callback callback) {
-        synchronized (this) {
-            if (this.kafkaProducer == null) {
-                this.kafkaProducer = this.producerFactory.createProducer();
-            }
-        }
+		ProducerRecord<K, V> record = new ProducerRecord<K, V>(topic, key, data);
+		return this.kafkaProducer.send(record, callback);
+	}
 
-        ProducerRecord<K, V> record = new ProducerRecord<K, V>(topic, key, data);
-        return this.kafkaProducer.send(record, callback);
-    }
+	public void flush() {
+		synchronized (this) {
+			if (this.kafkaProducer != null) {
+				this.kafkaProducer.flush();
+			}
+		}
+	}
 
-    public void flush() {
-        synchronized (this) {
-            if (this.kafkaProducer != null) {
-                this.kafkaProducer.flush();
-            }
-        }
-    }
-
-    public void destroy() {
-        synchronized (this) {
-            if (this.kafkaProducer != null) {
-                this.kafkaProducer.close();
-            }
-        }
-    }
+	public void destroy() {
+		synchronized (this) {
+			if (this.kafkaProducer != null) {
+				this.kafkaProducer.close();
+			}
+		}
+	}
 }

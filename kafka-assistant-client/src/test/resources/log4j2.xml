@@ -4,7 +4,6 @@
 		<Property name="LOG_DIR">logs</Property>
 		<Property name="ALL_FILE">detail.log</Property>
 		<Property name="ERROR_FILE">error.log</Property>
-		<Property name="ACCESS_FILE">access.log</Property>
 	</Properties>
 	<Appenders>
 		<Console name="console-appender" target="SYSTEM_OUT">
@@ -20,13 +19,9 @@
 			<PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}][%level{length=1}][%t] %l - %m%n" />
 			<TimeBasedTriggeringPolicy modulate="true" interval="1" />
 		</RollingFile>
-		<RollingFile name="access-appender" fileName="${LOG_DIR}/${ACCESS_FILE}" filePattern="${LOG_DIR}/$${date:yyyy-MM}/${ACCESS_FILE}.%d{yyyy-MM-dd}">
-			<PatternLayout pattern="%m%n" />
-			<TimeBasedTriggeringPolicy modulate="true" interval="1" />
-		</RollingFile>
 	</Appenders>
 	<Loggers>
-		<Logger name="com.dinstone.kafka" level="debug" additivity="false">
+		<Logger name="com.dinstone.kafka.client.consumer" level="debug" additivity="false">
 			<AppenderRef ref="console-appender" />
 		</Logger>
 

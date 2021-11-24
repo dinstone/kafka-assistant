@@ -4,11 +4,11 @@ import java.util.concurrent.Future;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-public class RecordFuture<K, V> {
+public class ConsumerTask<K, V> {
 
 	private ConsumerRecord<K, V> record;
 
-	private Promise<Void> promise;
+	private ConsumerPromise<Void> promise;
 
 	private long submitTime;
 
@@ -16,9 +16,9 @@ public class RecordFuture<K, V> {
 
 	private long completeTime;
 
-	public RecordFuture(ConsumerRecord<K, V> record) {
+	public ConsumerTask(ConsumerRecord<K, V> record) {
 		this.record = record;
-		this.promise = new Promise<Void>();
+		this.promise = new ConsumerPromise<Void>();
 		this.submitTime = System.currentTimeMillis();
 	}
 
@@ -51,11 +51,6 @@ public class RecordFuture<K, V> {
 		return promise;
 	}
 
-	@Override
-	public String toString() {
-		return record == null ? "CloseRecord" : record.toString();
-	}
-
 	public long waitTime() {
 		return scheduleTime - submitTime;
 	}
@@ -66,6 +61,11 @@ public class RecordFuture<K, V> {
 
 	public long finishTime() {
 		return completeTime - submitTime;
+	}
+
+	@Override
+	public String toString() {
+		return "ConsumerTask [record=" + record + ", promise=" + promise + "]";
 	}
 
 }

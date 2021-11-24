@@ -30,7 +30,7 @@
 	</property>
 	<property>
 		<name>max.poll.interval.ms</name>
-		<value>300000</value>
+		<value>180000</value>
 	</property>
 	<property>
 		<name>max.poll.records</name>

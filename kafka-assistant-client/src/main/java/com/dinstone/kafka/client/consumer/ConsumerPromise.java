@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Promise<T> implements Future<T> {
+public class ConsumerPromise<T> implements Future<T> {
 
 	private Lock lock = new ReentrantLock();
 
@@ -129,6 +129,11 @@ public class Promise<T> implements Future<T> {
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "ConsumerPromise [done=" + done + ", state=" + state + ", result=" + result + "]";
 	}
 
 }

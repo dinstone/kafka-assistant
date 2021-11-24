@@ -31,7 +31,11 @@ public class ConsumerConfig extends Configuration {
 	}
 
 	public boolean getAutoCommit() {
-		return getBoolean("enable.auto.commit", false);
+		return getBoolean("enable.auto.commit", true);
+	}
+
+	public void setAutoCommit(boolean auto) {
+		set("enable.auto.commit", auto ? "true" : "false");
 	}
 
 	public long getPollTimeOut() {

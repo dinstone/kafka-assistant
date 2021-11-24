@@ -39,16 +39,11 @@ public class TopicConsumer<K, V> {
 	private TopicConsumeRunner topicConsumeRunner;
 
 	public TopicConsumer(ConsumerConfig consumerConfig, MessageHandler<K, V> messageHandler) {
-		this(consumerConfig, messageHandler, null, null, null);
+		this(consumerConfig, messageHandler, null, null);
 	}
 
 	public TopicConsumer(ConsumerConfig consumerConfig, MessageHandler<K, V> messageHandler,
-			RecordDispatcher dispatcher) {
-		this(consumerConfig, messageHandler, dispatcher, null, null);
-	}
-
-	public TopicConsumer(ConsumerConfig consumerConfig, MessageHandler<K, V> messageHandler,
-			RecordDispatcher dispatcher, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+			Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
 		String topic = consumerConfig.getTopic();
 		if (topic == null || topic.length() == 0) {
 			throw new IllegalArgumentException("kafka.topic is empty");
@@ -61,6 +56,10 @@ public class TopicConsumer<K, V> {
 		}
 		this.messageHandler = messageHandler;
 
+		// set auto commit = false
+		consumerConfig.setAutoCommit(false);
+
+		// create kafka consumer factory
 		this.consumerFactory = new ConsumerFactory<K, V>(consumerConfig.getKafkaConfig(), keyDeserializer,
 				valueDeserializer);
 
@@ -90,10 +89,7 @@ public class TopicConsumer<K, V> {
 
 		private long pollTimeOut;
 
-		private boolean autoCommit;
-
 		public TopicConsumeRunner(ConsumerConfig consumerConfig) {
-			this.autoCommit = consumerConfig.getAutoCommit();
 			this.pollTimeOut = consumerConfig.getPollTimeOut();
 			// Thread name
 			setName("Topic[" + consumerConfig.getTopic() + "]-Poller");
@@ -102,7 +98,17 @@ public class TopicConsumer<K, V> {
 				@Override
 				public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
 					LOG.info("Revoke: {}}", partitions);
-					commitFinishOffset();
+					try {
+						commitFinishOffset();
+					} catch (Exception e) {
+						LOG.warn("Revoke commit offset error {}", e.getMessage());
+
+						// kafka comsumer is invalid, so must shutdown partition consumer.
+						for (PartitionConsumer<K, V> partitionConsumer : partitionConsumers.values()) {
+							partitionConsumer.shutdown();
+						}
+						partitionConsumers.clear();
+					}
 				}
 
 				@Override
@@ -112,6 +118,11 @@ public class TopicConsumer<K, V> {
 					// create new partition consumers
 					Map<TopicPartition, PartitionConsumer<K, V>> newConsumers = new HashMap<>();
 					for (TopicPartition partition : partitions) {
+						OffsetAndMetadata osm = kafkaConsumer.committed(partition);
+						long cdOffset = osm == null ? -1 : osm.offset();
+						long position = kafkaConsumer.position(partition);
+						LOG.info("{} commited offset={}, position={}", partition, cdOffset, position);
+
 						PartitionConsumer<K, V> consumer = partitionConsumers.get(partition);
 						if (consumer == null) {
 							newConsumers.put(partition,
@@ -121,7 +132,7 @@ public class TopicConsumer<K, V> {
 						}
 					}
 
-					// clear old partition consumers
+					// clear revoked partition consumers
 					for (Iterator<Entry<TopicPartition, PartitionConsumer<K, V>>> iterator = partitionConsumers
 							.entrySet().iterator(); iterator.hasNext();) {
 						Entry<TopicPartition, PartitionConsumer<K, V>> tpce = iterator.next();
@@ -189,7 +200,7 @@ public class TopicConsumer<K, V> {
 			partitionConsumers.forEach((partition, consumer) -> {
 				// find finish offset
 				long finishOffset = consumer.finish();
-				if (finishOffset > 0 && !autoCommit) {
+				if (finishOffset > -1) {
 					// sync ack commit offset
 					OffsetAndMetadata cos = new OffsetAndMetadata(finishOffset + 1);
 					kafkaConsumer.commitSync(Collections.singletonMap(partition, cos));

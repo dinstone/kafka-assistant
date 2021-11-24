@@ -18,6 +18,7 @@ public class TopicConsumerTest {
 			@Override
 			public void handle(ConsumerRecord<String, String> consumerRecord) throws Exception {
 				Thread.sleep(new Random().nextInt(10) * 1000);
+				LOG.error("{}-{} record: {}", consumerRecord.topic(), consumerRecord.partition(), consumerRecord.key());
 			}
 
 		};

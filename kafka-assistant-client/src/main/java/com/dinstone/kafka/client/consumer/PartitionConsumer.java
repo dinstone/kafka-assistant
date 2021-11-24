@@ -18,8 +18,8 @@ public class PartitionConsumer<K, V> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PartitionConsumer.class);
 
-	private final BlockingQueue<RecordFuture<K, V>> submitQueue = new LinkedBlockingQueue<>();
-	private final Queue<RecordFuture<K, V>> futureQueue = new ConcurrentLinkedQueue<>();
+	private final BlockingQueue<ConsumerTask<K, V>> submitQueue = new LinkedBlockingQueue<>();
+	private final Queue<ConsumerTask<K, V>> futureQueue = new ConcurrentLinkedQueue<>();
 	private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
 	private final MessageHandler<K, V> messageHandler;
@@ -31,6 +31,8 @@ public class PartitionConsumer<K, V> {
 	private final int messageQueueSize;
 
 	private long submitOffset = -1;
+
+	private long finishOffset = -1;
 
 	public PartitionConsumer(TopicPartition partition, ConsumerConfig consumerConfig,
 			MessageHandler<K, V> messageHandler) {
@@ -56,10 +58,10 @@ public class PartitionConsumer<K, V> {
 	 */
 	public long submit(List<ConsumerRecord<K, V>> recordList) {
 		int count = 0;
-		RecordFuture<K, V> last = null;
+		ConsumerTask<K, V> last = null;
 		for (ConsumerRecord<K, V> record : recordList) {
 			if (futureQueue.size() < messageQueueSize) {
-				last = new RecordFuture<K, V>(record);
+				last = new ConsumerTask<K, V>(record);
 				futureQueue.add(last);
 				submitQueue.add(last);
 				//
@@ -74,33 +76,45 @@ public class PartitionConsumer<K, V> {
 	}
 
 	/**
-	 * find consuming finish offset
+	 * find last finish offset
 	 * 
 	 * @return offset first finish
 	 */
 	public long finish() {
 		int count = 0;
-		RecordFuture<K, V> last = null;
+		ConsumerTask<K, V> last = null;
 		for (;;) {
-			last = futureQueue.peek();
-			if (last == null || !last.isComplete()) {
+			ConsumerTask<K, V> check = futureQueue.peek();
+			if (check == null || !check.isComplete()) {
 				break;
 			}
 
-			futureQueue.poll();
+			last = futureQueue.poll();
 			//
 			count++;
 		}
 
-		long offset = last == null ? 0 : last.record().offset();
-		LOG.debug("{} finish count {}, last offset {}", partition, count, offset);
-		return offset;
+		long lastOffset = -1;
+		if (last != null) {
+			lastOffset = last.record().offset();
+			finishOffset = lastOffset;
+		}
+
+		LOG.debug("{} finish count {}, last offset {}", partition, count, finishOffset);
+		return lastOffset;
 	}
 
 	public void shutdown() {
-		LOG.info("{} will shutdown", partition);
 		shutdown.set(true);
 		executor.shutdownNow();
+		LOG.info("{} consumer shutdown, submit/future: {}/{} tasks untreated, submit/finish: {}/{} offset", partition,
+				submitQueue.size(), futureQueue.size(), submitOffset, finishOffset);
+	}
+
+	@Override
+	public String toString() {
+		return "PartitionConsumer [partition=" + partition + ", submitOffset=" + submitOffset + ", finishOffset="
+				+ finishOffset + "]";
 	}
 
 	private class RecordConsumeRunner implements Runnable {
@@ -115,7 +129,7 @@ public class PartitionConsumer<K, V> {
 		public void run() {
 			Thread.currentThread().setName(tname);
 
-			RecordFuture<K, V> record = null;
+			ConsumerTask<K, V> record = null;
 			while (!shutdown.get() && !Thread.interrupted()) {
 				try {
 					record = submitQueue.take();
@@ -135,8 +149,6 @@ public class PartitionConsumer<K, V> {
 					}
 				}
 			}
-
-			LOG.warn("submit/future : {}/{} records untreated", submitQueue.size(), futureQueue.size());
 		}
 
 	}
