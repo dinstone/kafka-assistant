@@ -6,10 +6,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -74,7 +72,7 @@ public class TopicConsumer<K, V> {
 
 	public void stop() {
 		LOG.info("stop topic[{}] consume process", consumerConfig.getTopic());
-		topicConsumeRunner.shutdown();
+		topicConsumeRunner.close();
 	}
 
 	private class TopicConsumeRunner extends Thread {
@@ -103,11 +101,8 @@ public class TopicConsumer<K, V> {
 					} catch (Exception e) {
 						LOG.warn("Revoke commit offset error {}", e.getMessage());
 
-						// kafka comsumer is invalid, so must shutdown partition consumer.
-						for (PartitionConsumer<K, V> partitionConsumer : partitionConsumers.values()) {
-							partitionConsumer.shutdown();
-						}
-						partitionConsumers.clear();
+						// kafka comsumer is invalid, so must close partition consumer.
+						closePartitionConsumers();
 					}
 				}
 
@@ -115,14 +110,12 @@ public class TopicConsumer<K, V> {
 				public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 					LOG.info("Assign: {}}", partitions);
 
+					// resume consuming
+					kafkaConsumer.resume(partitions);
+
 					// create new partition consumers
 					Map<TopicPartition, PartitionConsumer<K, V>> newConsumers = new HashMap<>();
 					for (TopicPartition partition : partitions) {
-						OffsetAndMetadata osm = kafkaConsumer.committed(partition);
-						long cdOffset = osm == null ? -1 : osm.offset();
-						long position = kafkaConsumer.position(partition);
-						LOG.info("{} commited offset={}, position={}", partition, cdOffset, position);
-
 						PartitionConsumer<K, V> consumer = partitionConsumers.get(partition);
 						if (consumer == null) {
 							newConsumers.put(partition,
@@ -131,20 +124,27 @@ public class TopicConsumer<K, V> {
 							newConsumers.put(partition, consumer);
 						}
 					}
-
 					// clear revoked partition consumers
-					for (Iterator<Entry<TopicPartition, PartitionConsumer<K, V>>> iterator = partitionConsumers
-							.entrySet().iterator(); iterator.hasNext();) {
-						Entry<TopicPartition, PartitionConsumer<K, V>> tpce = iterator.next();
-						if (!newConsumers.containsKey(tpce.getKey())) {
+					partitionConsumers.forEach((partition, consumer) -> {
+						if (!newConsumers.containsKey(partition)) {
 							// need to shutdown
-							tpce.getValue().shutdown();
+							consumer.shutdown();
 						}
-						iterator.remove();
-					}
-
+					});
+					partitionConsumers.clear();
 					// add new partition consumers
 					partitionConsumers.putAll(newConsumers);
+
+					// show partition state info
+					partitionConsumers.forEach((partition, consumer) -> {
+						OffsetAndMetadata osm = kafkaConsumer.committed(partition);
+						long committed = osm == null ? -1 : osm.offset();
+						long position = kafkaConsumer.position(partition);
+						long submit = consumer.submitOffset();
+						long finish = consumer.finishOffset();
+						LOG.info("{} commited={}, position={} ; submit={}, finish={}", partition, committed, position,
+								submit, finish);
+					});
 				}
 			};
 		}
@@ -169,18 +169,24 @@ public class TopicConsumer<K, V> {
 						LOG.debug("{} poll records size {}", partition, recordList.size());
 						PartitionConsumer<K, V> pc = partitionConsumers.get(partition);
 						// submit records and control rate
-						long submitOffset = pc.submit(recordList);
-						if (submitOffset >= 0) {
-							kafkaConsumer.seek(partition, submitOffset + 1);
+						long count = pc.submit(recordList);
+						if (count > 0) {
+							kafkaConsumer.seek(partition, pc.submitOffset() + 1);
+						}
+						// full check and pause consuming
+						if (pc.isFull()) {
+							kafkaConsumer.pause(Collections.singleton(partition));
 						}
 					}
 				} catch (Exception e) {
 					// Ignore exception if closing
-					if (!closed.get()) {
-						LOG.warn("create a new KafkaConsumer for topic {} by error : {}", topicName, e.getMessage());
-						closeKafkaConsumer();
-						createKafkaConsumer();
+					if (closed.get()) {
+						continue;
 					}
+
+					LOG.warn("create a new KafkaConsumer for topic {} by error : {}", topicName, e.getMessage());
+					closeKafkaConsumer();
+					createKafkaConsumer();
 				}
 
 				long etime = System.currentTimeMillis();
@@ -198,12 +204,17 @@ public class TopicConsumer<K, V> {
 
 		private void commitFinishOffset() {
 			partitionConsumers.forEach((partition, consumer) -> {
-				// find finish offset
-				long finishOffset = consumer.finish();
-				if (finishOffset > -1) {
+				// process finish offset
+				long count = consumer.finish();
+				if (count > 0) {
 					// sync ack commit offset
-					OffsetAndMetadata cos = new OffsetAndMetadata(finishOffset + 1);
+					long offset = consumer.finishOffset() + 1;
+					OffsetAndMetadata cos = new OffsetAndMetadata(offset);
 					kafkaConsumer.commitSync(Collections.singletonMap(partition, cos));
+				}
+				// full check and pause consuming
+				if (!consumer.isFull()) {
+					kafkaConsumer.resume(Collections.singleton(partition));
 				}
 			});
 		}
@@ -217,9 +228,14 @@ public class TopicConsumer<K, V> {
 			if (kafkaConsumer != null) {
 				kafkaConsumer.unsubscribe();
 				kafkaConsumer.close();
+				kafkaConsumer = null;
 			}
 
 			// shutdown and clear partition consumer
+			closePartitionConsumers();
+		}
+
+		private void closePartitionConsumers() {
 			partitionConsumers.forEach((tp, pc) -> {
 				pc.shutdown();
 			});
@@ -227,7 +243,7 @@ public class TopicConsumer<K, V> {
 		}
 
 		// Shutdown hook which can be called from a separate thread
-		private void shutdown() {
+		private void close() {
 			closed.set(true);
 			if (kafkaConsumer != null) {
 				kafkaConsumer.wakeup();

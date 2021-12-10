@@ -48,6 +48,18 @@ public class PartitionConsumer<K, V> {
 		}
 	}
 
+	public long submitOffset() {
+		return submitOffset;
+	}
+
+	public long finishOffset() {
+		return finishOffset;
+	}
+
+	public boolean isFull() {
+		return futureQueue.size() >= messageQueueSize;
+	}
+
 	/**
 	 * submit record to consume
 	 * 
@@ -60,7 +72,7 @@ public class PartitionConsumer<K, V> {
 		int count = 0;
 		ConsumerTask<K, V> last = null;
 		for (ConsumerRecord<K, V> record : recordList) {
-			if (futureQueue.size() < messageQueueSize) {
+			if (!isFull()) {
 				last = new ConsumerTask<K, V>(record);
 				futureQueue.add(last);
 				submitQueue.add(last);
@@ -72,7 +84,7 @@ public class PartitionConsumer<K, V> {
 			submitOffset = last.record().offset();
 		}
 		LOG.debug("{} submit count {}, last offset {}", partition, count, submitOffset);
-		return submitOffset;
+		return count;
 	}
 
 	/**
@@ -93,15 +105,12 @@ public class PartitionConsumer<K, V> {
 			//
 			count++;
 		}
-
-		long lastOffset = -1;
 		if (last != null) {
-			lastOffset = last.record().offset();
-			finishOffset = lastOffset;
+			finishOffset = last.record().offset();
 		}
 
 		LOG.debug("{} finish count {}, last offset {}", partition, count, finishOffset);
-		return lastOffset;
+		return count;
 	}
 
 	public void shutdown() {
@@ -129,18 +138,17 @@ public class PartitionConsumer<K, V> {
 		public void run() {
 			Thread.currentThread().setName(tname);
 
-			ConsumerTask<K, V> record = null;
+			ConsumerTask<K, V> task = null;
 			while (!shutdown.get() && !Thread.interrupted()) {
 				try {
-					record = submitQueue.take();
+					task = submitQueue.take();
 
-					messageHandler.handle(record.schedule());
+					messageHandler.handle(task.schedule());
 
-					record.complete();
-					record = null;
+					task.complete();
 				} catch (Throwable e) {
-					if (record != null) {
-						record.complete(e);
+					if (task != null) {
+						task.complete(e);
 					}
 
 					// InterruptedException break, other ignore
