@@ -2,3 +2,6 @@
 /kafka-assistant.iml
 /.idea/
 /logs/
+/.DS_Store
+/.classpath
+/target/
