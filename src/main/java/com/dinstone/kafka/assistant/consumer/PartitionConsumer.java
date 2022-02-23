@@ -68,24 +68,24 @@ public class PartitionConsumer<K, V> {
     }
 
     /**
-     * submit record to consume
+     * submit record to consumer
      * 
-     * @param <K>
-     * @param <V>
      * @param recordList
-     * @return offset last submit
+     * @return submit count
      */
     public long submit(List<ConsumerRecord<K, V>> recordList) {
         int count = 0;
         ConsumerTask<K, V> last = null;
         for (ConsumerRecord<K, V> record : recordList) {
-            if (!isFull()) {
-                last = new ConsumerTask<K, V>(record);
-                futureQueue.add(last);
-                submitQueue.add(last);
-                //
-                count++;
+            if (isFull()) {
+                break;
             }
+
+            last = new ConsumerTask<K, V>(record);
+            futureQueue.add(last);
+            submitQueue.add(last);
+            //
+            count++;
         }
         if (last != null) {
             submitOffset = last.record().offset();
@@ -97,7 +97,7 @@ public class PartitionConsumer<K, V> {
     /**
      * find last finish offset
      * 
-     * @return offset first finish
+     * @return finish count
      */
     public long finish() {
         int count = 0;

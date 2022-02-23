@@ -149,34 +149,24 @@ public class TopicConsumer<K, V> {
         }
 
         public void run() {
-            // init kafka consumer
-            createKafkaConsumer();
-
             Duration ptoMillis = Duration.ofMillis(pollTimeOut);
             while (!closed.get()) {
+                // init kafka consumer
+                createKafkaConsumer();
+
                 long stime = System.currentTimeMillis();
                 try {
                     ConsumerRecords<K, V> records = kafkaConsumer.poll(ptoMillis);
                     LOG.debug("{} poll records size {}", topicName, records.count());
 
-                    // commit ack offset
+                    // commit finish offset
                     commitFinishOffset();
 
-                    // consume by partition consumer
-                    for (TopicPartition partition : records.partitions()) {
-                        List<ConsumerRecord<K, V>> recordList = records.records(partition);
-                        LOG.debug("{} poll records size {}", partition, recordList.size());
-                        PartitionConsumer<K, V> pc = partitionConsumers.get(partition);
-                        // submit records and control rate
-                        long count = pc.submit(recordList);
-                        if (count > 0) {
-                            kafkaConsumer.seek(partition, pc.submitOffset() + 1);
-                        }
-                        // full check and pause consuming
-                        if (pc.isFull()) {
-                            kafkaConsumer.pause(Collections.singleton(partition));
-                        }
-                    }
+                    // dispatch records to partition consumer
+                    dispatchRecords(records);
+
+                    // control partition consume status
+                    controlConsumeState();
                 } catch (Exception e) {
                     // Ignore exception if closing
                     if (closed.get()) {
@@ -185,9 +175,7 @@ public class TopicConsumer<K, V> {
 
                     LOG.warn("create a new KafkaConsumer for topic {} by error : {}", topicName, e.getMessage());
                     closeKafkaConsumer();
-                    createKafkaConsumer();
                 }
-
                 long etime = System.currentTimeMillis();
                 if (etime - stime < pollTimeOut) {
                     try {
@@ -201,6 +189,31 @@ public class TopicConsumer<K, V> {
             closeKafkaConsumer();
         }
 
+        private void controlConsumeState() {
+            partitionConsumers.forEach((partition, consumer) -> {
+                // full check and pause or resume consuming
+                if (consumer.isFull()) {
+                    kafkaConsumer.pause(Collections.singleton(partition));
+                } else {
+                    kafkaConsumer.resume(Collections.singleton(partition));
+                }
+            });
+        }
+
+        private void dispatchRecords(ConsumerRecords<K, V> records) {
+            // consume by partition consumer
+            for (TopicPartition partition : records.partitions()) {
+                List<ConsumerRecord<K, V>> recordList = records.records(partition);
+                LOG.debug("{} poll records size {}", partition, recordList.size());
+                PartitionConsumer<K, V> pc = partitionConsumers.get(partition);
+                // submit records and control rate
+                long count = pc.submit(recordList);
+                if (count > 0) {
+                    kafkaConsumer.seek(partition, pc.submitOffset() + 1);
+                }
+            }
+        }
+
         private void commitFinishOffset() {
             partitionConsumers.forEach((partition, consumer) -> {
                 // process finish offset
@@ -211,16 +224,14 @@ public class TopicConsumer<K, V> {
                     OffsetAndMetadata cos = new OffsetAndMetadata(offset);
                     kafkaConsumer.commitSync(Collections.singletonMap(partition, cos));
                 }
-                // full check and pause consuming
-                if (!consumer.isFull()) {
-                    kafkaConsumer.resume(Collections.singleton(partition));
-                }
             });
         }
 
         private void createKafkaConsumer() {
-            kafkaConsumer = consumerFactory.createConsumer();
-            kafkaConsumer.subscribe(Arrays.asList(topicName), rebalanceListener);
+            if (kafkaConsumer == null) {
+                kafkaConsumer = consumerFactory.createConsumer();
+                kafkaConsumer.subscribe(Arrays.asList(topicName), rebalanceListener);
+            }
         }
 
         private void closeKafkaConsumer() {

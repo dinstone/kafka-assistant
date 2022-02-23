@@ -10,29 +10,31 @@ import org.slf4j.LoggerFactory;
 
 public class TopicConsumerTest {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TopicConsumerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TopicConsumerTest.class);
 
-	public static void main(String[] args) {
-		MessageHandler<String, String> handleService = new MessageHandler<String, String>() {
+    public static void main(String[] args) {
+        MessageHandler<String, String> handleService = new MessageHandler<String, String>() {
 
-			@Override
-			public void handle(ConsumerRecord<String, String> consumerRecord) throws Exception {
-				Thread.sleep(new Random().nextInt(10) * 1000);
-				LOG.error("{}-{} record: {}", consumerRecord.topic(), consumerRecord.partition(), consumerRecord.key());
-			}
+            @Override
+            public void handle(ConsumerRecord<String, String> consumerRecord) throws Exception {
+                Thread.sleep(new Random().nextInt(10) * 1000);
+                LOG.error("{}-{} record: {}", consumerRecord.topic(), consumerRecord.partition(), consumerRecord.key());
+            }
 
-		};
+        };
 
-		ConsumerKafkaConfig consumeConfig = new ConsumerKafkaConfig("config-consumer-test.xml");
-		TopicConsumer<String, String> process = new TopicConsumer<String, String>(consumeConfig, handleService);
-		process.start();
+        ConsumerKafkaConfig consumeConfig = new ConsumerKafkaConfig("config-consumer-test.xml");
+//        consumeConfig.setParallelConsumerSize(1);
+//        consumeConfig.setMessageQueueSize(3);
+        TopicConsumer<String, String> process = new TopicConsumer<String, String>(consumeConfig, handleService);
+        process.start();
 
-		try {
-			System.in.read();
-		} catch (IOException e) {
-		}
+        try {
+            System.in.read();
+        } catch (IOException e) {
+        }
 
-		process.stop();
-	}
+        process.stop();
+    }
 
 }
