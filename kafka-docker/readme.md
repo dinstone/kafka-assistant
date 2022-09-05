@@ -1,4 +1,4 @@
-# install kafka with docker compse file
+# install kafka with docker compose file
 ```
 > docker-compose up -d
 ```

@@ -1,8 +1,10 @@
 # kafka assistant
 
 # 1.Install kafka 
-## with docker compse file
+## with a docker compose file
+
 ```
+> cd kafka-docker
 > docker-compose up -d
 ```
 
@@ -24,20 +26,29 @@
 ```
 public class TopicProducerTest {
 
-    public static void main(String[] args) {
-        ProducerConfig config = new ProducerConfig("config-producer-test.xml");
-        TopicProducer<String, String> producer = new TopicProducer<String, String>(config);
-        long st = System.currentTimeMillis();
-        for (int i = 0; i < 100; i++) {
-            producer.send("" + i, "a" + i);
-        }
+	public static void main(String[] args) {
+		ProducerKafkaConfig config = new ProducerKafkaConfig("config-producer-test.xml");
+		TopicProducer<String, String> producer = new TopicProducer<String, String>(config);
 
-        producer.flush();
-        long et = System.currentTimeMillis();
+		long st = System.currentTimeMillis();
+		int count = 100;
+		for (int i = 0; i < count; i++) {
+			producer.send("" + i, "a" + i);
+		}
 
-        System.out.println("ok, take's " + (et - st) + ", " + 10000 * 1000 / (et - st) + "tps");
-        producer.destroy();
-    }
+		producer.flush();
+		long et = System.currentTimeMillis();
+
+		System.out.println("ok," + count + " take's " + (et - st) + ", " + count * 1000 / (et - st) + "tps");
+
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+		}
+
+		producer.destroy();
+	}
+
 }
 ```
 
@@ -45,28 +56,32 @@ public class TopicProducerTest {
 ```
 public class TopicConsumerTest {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TopicConsumerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TopicConsumerTest.class);
 
-	public static void main(String[] args) {
-		MessageHandler<String, String> handleService = new MessageHandler<String, String>() {
+    public static void main(String[] args) {
+        MessageHandler<String, String> handleService = new MessageHandler<String, String>() {
 
-			@Override
-			public void handle(ConsumerRecord<String, String> consumerRecord) throws Exception {
-				Thread.sleep(new Random().nextInt(10) * 1000);
-			}
+            @Override
+            public void handle(ConsumerRecord<String, String> consumerRecord) throws Exception {
+                Thread.sleep(new Random().nextInt(10) * 1000);
+                LOG.error("{}-{} record: {}", consumerRecord.topic(), consumerRecord.partition(), consumerRecord.key());
+            }
 
-		};
+        };
 
-		ConsumerConfig consumeConfig = new ConsumerConfig("config-consumer-test.xml");
-		TopicConsumer<String, String> process = new TopicConsumer<String, String>(consumeConfig, handleService);
-		process.start();
+        ConsumerKafkaConfig consumeConfig = new ConsumerKafkaConfig("config-consumer-test.xml");
+        // consumeConfig.setParallelConsumerSize(1);
+        // consumeConfig.setMessageQueueSize(3);
+        TopicConsumer<String, String> process = new TopicConsumer<String, String>(consumeConfig, handleService);
+        process.start();
 
-		try {
-			System.in.read();
-		} catch (IOException e) {
-		}
+        try {
+            System.in.read();
+        } catch (IOException e) {
+        }
 
-		process.stop();
-	}
+        process.stop();
+    }
+
 }
 ```

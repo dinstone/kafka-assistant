@@ -24,7 +24,7 @@ public class ConsumerFactoryTest {
 
     public void testCreateConsumer() throws IOException {
         ConsumerKafkaConfig consumeConfig = new ConsumerKafkaConfig("config-consumer-test.xml");
-        ConsumerFactory<String, String> cf = new ConsumerFactory<String, String>(consumeConfig.getKafkaConfig(), null,
+        ConsumerFactory<String, String> cf = new ConsumerFactory<String, String>(consumeConfig.getKafkaProperties(), null,
                 null);
         Consumer<String, String> consumer = cf.createConsumer();
         consumer.subscribe(Arrays.asList(consumeConfig.getTopic()));
@@ -78,7 +78,7 @@ public class ConsumerFactoryTest {
 
     public void seekToEnd() throws IOException {
         ConsumerKafkaConfig consumeConfig = new ConsumerKafkaConfig("config-consumer-test.xml");
-        ConsumerFactory<String, String> cf = new ConsumerFactory<String, String>(consumeConfig.getKafkaConfig(), null,
+        ConsumerFactory<String, String> cf = new ConsumerFactory<String, String>(consumeConfig.getKafkaProperties(), null,
                 null);
         Consumer<String, String> consumer = cf.createConsumer();
 
@@ -117,7 +117,7 @@ public class ConsumerFactoryTest {
 
     private void subscribe() {
         ConsumerKafkaConfig consumeConfig = new ConsumerKafkaConfig("config-consumer-test.xml");
-        ConsumerFactory<String, String> cf = new ConsumerFactory<String, String>(consumeConfig.getKafkaConfig(), null,
+        ConsumerFactory<String, String> cf = new ConsumerFactory<String, String>(consumeConfig.getKafkaProperties(), null,
                 null);
         Consumer<String, String> consumer = cf.createConsumer();
         consumer.subscribe(Arrays.asList(consumeConfig.getTopic()), new ConsumerRebalanceListener() {

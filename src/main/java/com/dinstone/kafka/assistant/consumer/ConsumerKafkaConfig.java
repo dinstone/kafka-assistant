@@ -19,7 +19,7 @@ public class ConsumerKafkaConfig extends KafkaConfig {
         super(configLocation);
     }
 
-    public Properties getKafkaConfig() {
+    public Properties getKafkaProperties() {
         Properties ret = new Properties();
         ret.putAll(properties);
         ret.remove("kafka.topic");

@@ -56,7 +56,7 @@ public class TopicConsumer<K, V> {
         consumerConfig.setAutoCommit(false);
 
         // create kafka consumer factory
-        this.consumerFactory = new ConsumerFactory<K, V>(consumerConfig.getKafkaConfig(), keyDeserializer,
+        this.consumerFactory = new ConsumerFactory<K, V>(consumerConfig.getKafkaProperties(), keyDeserializer,
             valueDeserializer);
 
         // create topic consumer runner
