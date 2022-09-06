@@ -1,9 +1,8 @@
-
 package com.dinstone.kafka.assistant.producer;
 
-import java.util.Properties;
-
 import com.dinstone.kafka.assistant.KafkaConfig;
+
+import java.util.Properties;
 
 public class ProducerKafkaConfig extends KafkaConfig {
 

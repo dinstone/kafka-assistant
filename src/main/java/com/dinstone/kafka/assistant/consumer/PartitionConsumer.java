@@ -1,19 +1,14 @@
-
 package com.dinstone.kafka.assistant.consumer;
-
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PartitionConsumer<K, V> {
 
@@ -38,7 +33,7 @@ public class PartitionConsumer<K, V> {
     private long finishOffset = -1;
 
     public PartitionConsumer(TopicPartition partition, ConsumerKafkaConfig consumerConfig,
-            MessageHandler<K, V> messageHandler) {
+                             MessageHandler<K, V> messageHandler) {
         this.partition = partition;
         this.messageHandler = messageHandler;
 
@@ -69,7 +64,7 @@ public class PartitionConsumer<K, V> {
 
     /**
      * submit record to consumer
-     * 
+     *
      * @param recordList
      * @return submit count
      */
@@ -96,13 +91,13 @@ public class PartitionConsumer<K, V> {
 
     /**
      * find last finish offset
-     * 
+     *
      * @return finish count
      */
     public long finish() {
         int count = 0;
         ConsumerTask<K, V> last = null;
-        for (;;) {
+        for (; ; ) {
             ConsumerTask<K, V> check = futureQueue.peek();
             if (check == null || !check.isFinish()) {
                 break;
@@ -124,7 +119,7 @@ public class PartitionConsumer<K, V> {
         shutdown.set(true);
         executor.shutdownNow();
         LOG.info("{} consumer shutdown, submit/future: {}/{} tasks untreated, submit/finish: {}/{} offset", partition,
-            submitQueue.size(), futureQueue.size(), submitOffset, finishOffset);
+                submitQueue.size(), futureQueue.size(), submitOffset, finishOffset);
     }
 
     @Override

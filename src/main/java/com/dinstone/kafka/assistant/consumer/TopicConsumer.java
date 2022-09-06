@@ -1,24 +1,14 @@
-
 package com.dinstone.kafka.assistant.consumer;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TopicConsumer<K, V> {
 
@@ -39,7 +29,7 @@ public class TopicConsumer<K, V> {
     }
 
     public TopicConsumer(ConsumerKafkaConfig consumerConfig, MessageHandler<K, V> messageHandler,
-            Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+                         Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         String topic = consumerConfig.getTopic();
         if (topic == null || topic.length() == 0) {
             throw new IllegalArgumentException("kafka.topic is empty");
@@ -57,7 +47,7 @@ public class TopicConsumer<K, V> {
 
         // create kafka consumer factory
         this.consumerFactory = new ConsumerFactory<K, V>(consumerConfig.getKafkaProperties(), keyDeserializer,
-            valueDeserializer);
+                valueDeserializer);
 
         // create topic consumer runner
         this.topicEventLoop = new TopicEventLoop(consumerConfig);
@@ -118,7 +108,7 @@ public class TopicConsumer<K, V> {
                         PartitionConsumer<K, V> consumer = partitionConsumers.get(partition);
                         if (consumer == null) {
                             newConsumers.put(partition,
-                                new PartitionConsumer<K, V>(partition, consumerConfig, messageHandler));
+                                    new PartitionConsumer<K, V>(partition, consumerConfig, messageHandler));
                         } else {
                             newConsumers.put(partition, consumer);
                         }
@@ -142,7 +132,7 @@ public class TopicConsumer<K, V> {
                         long submit = consumer.submitOffset();
                         long finish = consumer.finishOffset();
                         LOG.info("{} commited={}, position={} ; submit={}, finish={}", partition, committed, position,
-                            submit, finish);
+                                submit, finish);
                     });
                 }
             };

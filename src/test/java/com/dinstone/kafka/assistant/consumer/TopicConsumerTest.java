@@ -1,12 +1,11 @@
-
 package com.dinstone.kafka.assistant.consumer;
-
-import java.io.IOException;
-import java.util.Random;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Random;
 
 public class TopicConsumerTest {
 

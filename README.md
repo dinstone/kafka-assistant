@@ -1,6 +1,7 @@
 # kafka assistant
 
-# 1.Install kafka 
+# 1.Install kafka
+
 ## with a docker compose file
 
 ```
@@ -9,6 +10,7 @@
 ```
 
 ## produce test
+
 ```
 > docker exec -it kafka_kafkaNode_1 sh
 > kafka-console-producer.sh --broker-list localhost:9092 --topic kafeidou
@@ -16,43 +18,47 @@
 ```
 
 ## consume test
+
 ```
 > docker exec -it kafka_kafkaNode_1 sh
 > kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic kafeidou --from-beginning
 ```
 
 # 2.API access kafka
+
 ## produce message to kafka topic
+
 ```
 public class TopicProducerTest {
 
-	public static void main(String[] args) {
-		ProducerKafkaConfig config = new ProducerKafkaConfig("config-producer-test.xml");
-		TopicProducer<String, String> producer = new TopicProducer<String, String>(config);
+    public static void main(String[] args) {
+        ProducerKafkaConfig config = new ProducerKafkaConfig("config-producer-test.xml");
+        TopicProducer<String, String> producer = new TopicProducer<String, String>(config);
 
-		long st = System.currentTimeMillis();
-		int count = 100;
-		for (int i = 0; i < count; i++) {
-			producer.send("" + i, "a" + i);
-		}
+        long st = System.currentTimeMillis();
+        int count = 100;
+        for (int i = 0; i < count; i++) {
+            producer.send("" + i, "a" + i);
+        }
 
-		producer.flush();
-		long et = System.currentTimeMillis();
+        producer.flush();
+        long et = System.currentTimeMillis();
 
-		System.out.println("ok," + count + " take's " + (et - st) + ", " + count * 1000 / (et - st) + "tps");
+        System.out.println("ok," + count + " take's " + (et - st) + ", " + count * 1000 / (et - st) + "tps");
 
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-		}
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
 
-		producer.destroy();
-	}
+        producer.destroy();
+    }
 
 }
 ```
 
 ## parallel consume message from kafka topic
+
 ```
 public class TopicConsumerTest {
 

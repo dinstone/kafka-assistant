@@ -6,7 +6,7 @@ services:
       - ./zk-data:/data
     ports:
       - 2182:2181
-       
+
   kafkaNode:
     image: wurstmeister/kafka
     ports:

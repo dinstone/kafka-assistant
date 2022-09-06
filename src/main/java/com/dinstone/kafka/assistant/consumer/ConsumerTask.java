@@ -1,9 +1,8 @@
-
 package com.dinstone.kafka.assistant.consumer;
 
-import java.util.concurrent.Future;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+
+import java.util.concurrent.Future;
 
 public class ConsumerTask<K, V> {
 

@@ -1,26 +1,29 @@
-
 package com.dinstone.kafka.assistant;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.TopicPartition;
 
 import com.dinstone.kafka.assistant.consumer.ConsumerFactory;
 import com.dinstone.kafka.assistant.consumer.ConsumerKafkaConfig;
+import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
+
+import java.io.IOException;
+import java.util.*;
 
 public class ConsumerFactoryTest {
+
+    public static void main(String[] args) throws IOException {
+        ConsumerFactoryTest cft = new ConsumerFactoryTest();
+        System.out.println("start");
+
+//        cft.testCreateConsumer();
+//        cft.seekToEnd();
+
+        cft.subscribe();
+
+        System.in.read();
+
+        System.out.println("stop");
+    }
 
     public void testCreateConsumer() throws IOException {
         ConsumerKafkaConfig consumeConfig = new ConsumerKafkaConfig("config-consumer-test.xml");
@@ -99,20 +102,6 @@ public class ConsumerFactoryTest {
             OffsetAndMetadata cos = consumer.committed(topicPartition);
             System.out.println(topicPartition + ":" + cos);
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-        ConsumerFactoryTest cft = new ConsumerFactoryTest();
-        System.out.println("start");
-
-//        cft.testCreateConsumer();
-//        cft.seekToEnd();
-
-        cft.subscribe();
-
-        System.in.read();
-
-        System.out.println("stop");
     }
 
     private void subscribe() {

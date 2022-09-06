@@ -1,11 +1,10 @@
-
 package com.dinstone.kafka.assistant.consumer;
-
-import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.Deserializer;
+
+import java.util.Properties;
 
 public class ConsumerFactory<K, V> {
 

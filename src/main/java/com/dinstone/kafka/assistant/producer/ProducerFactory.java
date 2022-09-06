@@ -1,18 +1,7 @@
-
 package com.dinstone.kafka.assistant.producer;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.producer.Callback;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
@@ -21,6 +10,12 @@ import org.apache.kafka.common.errors.ProducerFencedException;
 import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class ProducerFactory<K, V> {
 
@@ -48,7 +43,7 @@ public class ProducerFactory<K, V> {
     }
 
     public ProducerFactory(Properties configs, Serializer<K> keySerializer, Serializer<V> valueSerializer,
-            Callback defaultCallback) {
+                           Callback defaultCallback) {
         if (configs == null) {
             throw new IllegalArgumentException("configs is null");
         }
@@ -61,7 +56,7 @@ public class ProducerFactory<K, V> {
 
     public Producer<K, V> createProducer() {
         return new CallbackProducer<K, V>(new KafkaProducer<K, V>(this.configs, keySerializer, valueSerializer),
-            defaultCallback);
+                defaultCallback);
     }
 
     private static class CallbackProducer<K, V> implements Producer<K, V> {

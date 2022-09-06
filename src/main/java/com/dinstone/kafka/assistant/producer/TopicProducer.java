@@ -1,13 +1,12 @@
-
 package com.dinstone.kafka.assistant.producer;
-
-import java.util.concurrent.Future;
 
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
+
+import java.util.concurrent.Future;
 
 public class TopicProducer<K, V> {
 
@@ -26,7 +25,7 @@ public class TopicProducer<K, V> {
     }
 
     public TopicProducer(ProducerKafkaConfig config, Callback defaultCallback, Serializer<K> keySerializer,
-            Serializer<V> valueSerializer) {
+                         Serializer<V> valueSerializer) {
         if (config == null) {
             throw new IllegalArgumentException("config is null");
         }
@@ -37,7 +36,7 @@ public class TopicProducer<K, V> {
         this.topic = config.getTopic();
 
         this.producerFactory = new ProducerFactory<K, V>(config.getKafkaConfig(), keySerializer, valueSerializer,
-            defaultCallback);
+                defaultCallback);
     }
 
     public Future<RecordMetadata> send(K key, V data) {
